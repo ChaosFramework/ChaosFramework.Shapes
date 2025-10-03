@@ -24,6 +24,9 @@
   <ItemGroup>
     <Compile Include="source\**\*.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <None Include="License\*.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <!-- References -->
