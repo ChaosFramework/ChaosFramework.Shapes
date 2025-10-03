@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import
+    Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
+    Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"
+    />
+
+  <!-- Project Metadata -->
+  <PropertyGroup>
+    <AssemblyName>ChaosFramework.Shapes</AssemblyName>
+    <RootNamespace>ChaosFramework.Shapes</RootNamespace>
+    <ProjectGuid>{4ED35638-6132-4A67-8037-D5B003431DBD}</ProjectGuid>
+  </PropertyGroup>
+
+  <!-- Properties -->
+  <Import Project="submodules/ChaosPresets.Targets/Properties/Library.targets" />
+  <Import Project="submodules/ChaosPresets.Targets/Paths/Output/bin.targets" />
+
+  <!-- Configuration and Platform -->
+  <Import Project="submodules/ChaosPresets.Targets/Configurations.targets" />
+  <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' " />
+
+  <!-- Included Files -->
+  <ItemGroup>
+    <Compile Include="source\**\*.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+
+  <!-- References -->
+  <Import Project="submodules/ChaosPresets.References/ProjectReferences/ChaosUtil.Primitives.targets" />
+  <Import Project="submodules/ChaosPresets.References/ProjectReferences/ChaosFramework.Collections.targets" />
+  <Import Project="submodules/ChaosPresets.References/ProjectReferences/ChaosFramework.IO.targets" />
+  <Import Project="submodules/ChaosPresets.References/ProjectReferences/ChaosFramework.Math.targets" />
+  <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System" />
+  </ItemGroup>
+
+  <!-- Analyzers -->
+  <Import Project="submodules/ChaosPresets.References/Analyzers/ChaosAnalyzers.CleanCode.targets" />
+
+  <!-- Cleanup Task -->
+  <Import Project="submodules/ChaosPresets.References/BuildTasks/ChaosBuild.CodeFormatter.Tasks.ChangedProjectFiles.targets" />
+
+  <!-- Default Targets for Building CSharp Projects -->
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
