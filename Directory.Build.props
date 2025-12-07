@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <Import Project="$(SolutionDir)submodules/ChaosPresets.Targets/Paths/Output/Common.targets" />
+</Project>
