@@ -159,11 +159,9 @@ namespace ChaosFramework.Shapes.Convex
                 out offsetOnAxis,
                 out offsetOnRay
                 );
-            Vector3f closestOnAxisToRay = absoluteA + (absoluteB - absoluteA) * Clamp(offsetOnAxis, 0, 1);
-            Vector3f closestOnRayToAxis = rayOrigin + rayDirection * Max(offsetOnRay, 0);
-
-
             Vector3f axis = absoluteB - absoluteA;
+            Vector3f closestOnAxisToRay = absoluteA + axis * Clamp(offsetOnAxis, 0, 1);
+            Vector3f closestOnRayToAxis = rayOrigin + rayDirection * Max(offsetOnRay, 0);
 
             // check if line is too far from capsule
             float distRayAxisSq = (closestOnAxisToRay - closestOnRayToAxis).LengthSq();
