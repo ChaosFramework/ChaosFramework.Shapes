@@ -113,7 +113,7 @@ namespace ChaosFramework.Shapes.Convex
         public abstract Vector3f GetRandomPositionOnShape();
 
         /// <summary>
-        ///     If the line starting at point <paramref name="p"/> in <param name="direction"/> hits the surface of this shape,
+        ///     If the ray starting at point <paramref name="p"/> in <param name="direction"/> hits the surface of this shape,
         ///     this will return at least one intersection point.
         ///     <para>
         ///         If multiple intersection points are returned, they are ordered by signed distance along <paramref name="direction"/>.

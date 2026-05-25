@@ -1,5 +1,6 @@
 using ChaosFramework.Math.Vectors;
 using ChaosUtil.Primitives;
+using static ChaosFramework.Math.Clamping;
 using static ChaosFramework.Math.Exponentials;
 
 namespace ChaosFramework.Shapes.Convex
@@ -149,17 +150,18 @@ namespace ChaosFramework.Shapes.Convex
 
         public override Vector3f[] CheckLine(Vector3f rayOrigin, Vector3f rayDirection)
         {
-            Vector3f closestOnAxisToRay, closestOnRayToAxis;
-            Projection.SegmentOnSegment(
+            float offsetOnAxis, offsetOnRay;
+            Projection.LineOnLine(
                 absoluteA,
                 absoluteB,
                 rayOrigin,
                 rayOrigin + rayDirection,
-                out closestOnAxisToRay,
-                out closestOnRayToAxis
+                out offsetOnAxis,
+                out offsetOnRay
                 );
-
             Vector3f axis = absoluteB - absoluteA;
+            Vector3f closestOnAxisToRay = absoluteA + axis * Clamp(offsetOnAxis, 0, 1);
+            Vector3f closestOnRayToAxis = rayOrigin + rayDirection * Max(offsetOnRay, 0);
 
             // check if line is too far from capsule
             float distRayAxisSq = (closestOnAxisToRay - closestOnRayToAxis).LengthSq();
