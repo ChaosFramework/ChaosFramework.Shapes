@@ -1,4 +1,3 @@
-using ChaosFramework.Collections;
 using ChaosFramework.IO;
 using ChaosFramework.Math;
 using ChaosFramework.Math.Vectors;
@@ -6,6 +5,7 @@ using System.IO;
 using System.Linq;
 using static System.Text.Encoding;
 using SysCol = System.Collections.Generic;
+using KeyFrameList = System.Collections.Generic.SortedList<float, float>;
 
 namespace ChaosFramework.Shapes.Rigging
 {
@@ -32,18 +32,6 @@ namespace ChaosFramework.Shapes.Rigging
 
     public class Animation
     {
-        internal class KeyFrame
-        {
-            public float time;
-            public float value;
-
-            public KeyFrame(float time, float value)
-            {
-                this.time = time;
-                this.value = value;
-            }
-        }
-
         static readonly int NUM_KEY_FRAME_CHANNELS = System.Enum.GetNames(typeof(KeyFrameChannel)).Length;
         static readonly int NUM_KEY_FRAME_TYPES = System.Enum.GetNames(typeof(FileKeyFrameType)).Length;
 
@@ -106,13 +94,9 @@ namespace ChaosFramework.Shapes.Rigging
             }
         }
 
-        static int CompareKeyFrames(KeyFrame a, KeyFrame b)
-            => a.time.CompareTo(b.time);
-
         public SysCol.Dictionary<string, float> animationWeights = new SysCol.Dictionary<string, float>();
 
-        internal SysCol.Dictionary<string, AdvancedLinkedList<KeyFrame>>[] frames
-            = new SysCol.Dictionary<string, AdvancedLinkedList<KeyFrame>>[NUM_KEY_FRAME_CHANNELS];
+        internal SysCol.Dictionary<string, KeyFrameList>[] frames = new SysCol.Dictionary<string, KeyFrameList>[NUM_KEY_FRAME_CHANNELS];
 
         public string name { get; private set; }
 
@@ -120,7 +104,7 @@ namespace ChaosFramework.Shapes.Rigging
         {
             this.name = name;
             for (int i = 0; i < frames.Length; i++)
-                frames[i] = new SysCol.Dictionary<string, AdvancedLinkedList<KeyFrame>>();
+                frames[i] = new SysCol.Dictionary<string, KeyFrameList>();
         }
 
         public void AddKeyFrame(KeyFrameChannel channel, string bone, float time, float value)
@@ -129,19 +113,19 @@ namespace ChaosFramework.Shapes.Rigging
             if (float.IsNaN(value))
                 return;
 
-            AdvancedLinkedList<KeyFrame> lst;
+            KeyFrameList lst;
             if (!frames[(byte)channel].TryGetValue(bone, out lst))
             {
-                lst = frames[(byte)channel][bone] = new AdvancedLinkedList<KeyFrame>();
+                lst = frames[(byte)channel][bone] = new KeyFrameList();
                 animationWeights[bone] = 1;
             }
 
             System.Diagnostics.Debug.Assert(
-                lst.All(f => f.time != time),
+                lst.All(f => f.Key != time),
                 $"Timestamp {time} already exists for {bone}.{channel} in rig {name}"
                 );
 
-            lst.AddSorted(new KeyFrame(time, value), CompareKeyFrames);
+            lst.Add(time, value);
         }
 
         public void AddOrientationKeyFrame(string bone, float time, Quaternion value)
@@ -168,14 +152,8 @@ namespace ChaosFramework.Shapes.Rigging
 
         public void RemoveKeyFrame(int channel, string bone, float time)
         {
-            AdvancedLinkedList<KeyFrame> boneFrames = frames[channel][bone];
-            if (boneFrames != null)
-                foreach (KeyFrame frame in boneFrames)
-                    if (frame.time == time)
-                    {
-                        boneFrames.RemoveCurrent();
-                        return;
-                    }
+            KeyFrameList boneFrames = frames[channel][bone];
+            boneFrames.Remove(time);
         }
 
         public void SetAnimationData(Rig rig, float progression, float totalWeight = 1)
@@ -227,41 +205,44 @@ namespace ChaosFramework.Shapes.Rigging
 
         float EvaluateChannel(string bone, KeyFrameChannel channel, float progression)
         {
-            AdvancedLinkedList<KeyFrame> boneFrames = null;
-            if (!frames[(int)channel].TryGetValue(bone, out boneFrames) || boneFrames.length == 0)
+            if (!frames[(int)channel].TryGetValue(bone, out KeyFrameList boneFrames) || boneFrames.Count == 0)
                 return GetDefaultValue(channel);
 
-            if (boneFrames.length == 1)
-                return boneFrames.first.value;
+            if (boneFrames.Count == 1)
+                return boneFrames.ElementAt(0).Value;
 
-            KeyFrame prev = null, next = null;
-            foreach (KeyFrame frame in boneFrames)
-                if (frame.time >= progression)
-                {
-                    next = frame;
-                    prev = boneFrames.GetCurrentForeachElement(-1);
-                    if (prev == null)
-                        prev = boneFrames.last;
+            SysCol.IList<float> keys = boneFrames.Keys;
+            SysCol.IList<float> values = boneFrames.Values;
 
-                    break;
-                }
+            int lo = 0;
+            int hi = boneFrames.Count;
 
-            if (next == null)
+            while (lo < hi)
             {
-                prev = boneFrames.last;
-                next = boneFrames.first;
+                int mid = lo + (hi - lo) / 2;
+
+                if (keys[mid] < progression)
+                    lo = mid + 1;
+                else
+                    hi = mid;
             }
 
-            float deltaKeyFrames = next.time - prev.time;
+            int nextIndex = lo % boneFrames.Count;
+            int prevIndex = (lo - 1 + boneFrames.Count) % boneFrames.Count;
+
+            float prev = values[prevIndex];
+            float next = values[nextIndex];
+
+            float deltaKeyFrames = keys[nextIndex] - keys[prevIndex];
             if (deltaKeyFrames < 0)
                 deltaKeyFrames++;
 
-            float deltaRealTimeToPrevious = progression - prev.time;
+            float deltaRealTimeToPrevious = progression - keys[prevIndex];
             if (deltaRealTimeToPrevious < 0)
                 deltaRealTimeToPrevious++;
 
             float f = deltaKeyFrames == 0 ? 1 : deltaRealTimeToPrevious / deltaKeyFrames;
-            return prev.value + (next.value - prev.value) * f;
+            return prev + (next - prev) * f;
         }
 
         public virtual Matrix GetTransform(string bone, float progression)
